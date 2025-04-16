@@ -26,10 +26,10 @@ namespace LoanShark.Repository
         public UserRepository()
         {
         }
-        private readonly DataLink dataLink;
-        public UserRepository(DataLink dataLink)
+        private readonly IDataLink dataLink;
+        public UserRepository(IDataLink dataLink)
         {
-            dataLink = dataLink;
+            this.dataLink = dataLink;
         }
 
         // saves a new user in the database
@@ -50,7 +50,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@password_salt", user.HashedPassword.GetSalt()),
                     new SqlParameter("@id_user", SqlDbType.Int) { Direction = ParameterDirection.Output }
                 };
-                await DataLink.Instance.ExecuteNonQuery("CreateUser", parameters);
+                await dataLink.ExecuteNonQuery("CreateUser", parameters);
                 int newUserId = (int)parameters.First(p => p.ParameterName == "@id_user").Value;
                 user.UserID = newUserId;
                 return user;
@@ -72,7 +72,7 @@ namespace LoanShark.Repository
                 {
                     new SqlParameter("@id_user", userId)
                 };
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetUserById", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetUserById", parameters);
                 if (dataTable.Rows.Count == 0)
                 {
                     return null;
@@ -112,7 +112,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@hashed_password", user.HashedPassword.GetHashedPassword()),
                     new SqlParameter("@password_salt", user.HashedPassword.GetSalt())
                 };
-                await DataLink.Instance.ExecuteNonQuery("UpdateUser", parameters);
+                await dataLink.ExecuteNonQuery("UpdateUser", parameters);
                 return true;
             }
             catch (Exception ex)
@@ -134,7 +134,7 @@ namespace LoanShark.Repository
                 {
                     new SqlParameter("@id_user", userId)
                 };
-                await DataLink.Instance.ExecuteNonQuery("DeleteUser", parameters);
+                await dataLink.ExecuteNonQuery("DeleteUser", parameters);
                 return true;
             }
             catch (Exception ex)
@@ -154,7 +154,7 @@ namespace LoanShark.Repository
                 {
                     new SqlParameter("@cnp", cnp.ToString())
                 };
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetUserByCnp", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetUserByCnp", parameters);
                 if (dataTable.Rows.Count == 0)
                 {
                     return null;
@@ -186,7 +186,7 @@ namespace LoanShark.Repository
                 {
                     new SqlParameter("@email", email.ToString())
                 };
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetUserByEmail", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetUserByEmail", parameters);
                 if (dataTable.Rows.Count == 0)
                 {
                     return null;
@@ -218,7 +218,7 @@ namespace LoanShark.Repository
                 {
                     new SqlParameter("@phone_number", phoneNumber.ToString())
                 };
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetUserByPhoneNumber", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetUserByPhoneNumber", parameters);
                 if (dataTable.Rows.Count == 0)
                 {
                     return null;
@@ -249,7 +249,7 @@ namespace LoanShark.Repository
                    new SqlParameter("@hashed_password", System.Data.SqlDbType.VarChar, 255) { Direction = ParameterDirection.Output },
                    new SqlParameter("@password_salt", System.Data.SqlDbType.VarChar, 32) { Direction = ParameterDirection.Output }
                };
-            await DataLink.Instance.ExecuteNonQuery("GetHashedPassword", parameterList);
+            await dataLink.ExecuteNonQuery("GetHashedPassword", parameterList);
             string passwordHash = (string)parameterList.First(parameter => parameter.ParameterName == "@hashed_password").Value;
             string salt = (string)parameterList.First(parameter => parameter.ParameterName == "@password_salt").Value;
 
