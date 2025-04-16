@@ -267,7 +267,7 @@ namespace LoanShark.Repository
         /// <returns>A list of currency names as strings</returns>
         public async Task<List<string>> GetCurrencies()
         {
-            DataTable dataTable = await dataLink.ExecuteReader("GetCur rencies");
+            DataTable dataTable = await dataLink.ExecuteReader("GetCurrencies");
             return await ConvertDataTableToCurrencyList(dataTable);
         }
 

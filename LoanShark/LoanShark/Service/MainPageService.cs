@@ -10,7 +10,12 @@ namespace LoanShark.Service
 {
     public class MainPageService
     {
-        private readonly MainPageRepository repo;
+        private readonly IMainPageRepository repo;
+
+        public MainPageService(IMainPageRepository repository)
+        {
+            this.repo = repository;
+        }
 
         public MainPageService()
         {
