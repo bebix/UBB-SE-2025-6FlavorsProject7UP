@@ -75,6 +75,12 @@ namespace LoanShark.Repository
     /// </summary>
     public class BankAccountRepository : IBankAccountRepository
     {
+        private readonly IDataLink dataLink;
+        public BankAccountRepository(IDataLink dataLink)
+        {
+            this.dataLink = dataLink;
+        }
+
         /// <summary>
         /// Initializes a new instance of the BankAccountRepository class
         /// </summary>
@@ -90,7 +96,7 @@ namespace LoanShark.Repository
         {
             try
             {
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetAllBankAccounts");
+                DataTable dataTable = await dataLink.ExecuteReader("GetAllBankAccounts");
                 return await ConvertDataTableToBankAccountList(dataTable);
             }
             catch (Exception)
@@ -113,7 +119,7 @@ namespace LoanShark.Repository
                 {
                     new SqlParameter("@id_user", userID)
                 };
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetBankAccountsByUser", sqlParams);
+                DataTable dataTable = await dataLink.ExecuteReader("GetBankAccountsByUser", sqlParams);
                 return await ConvertDataTableToBankAccountList(dataTable);
             }
             catch (Exception)
@@ -133,7 +139,7 @@ namespace LoanShark.Repository
             try
             {
                 var sqlParams = new SqlParameter[] { new SqlParameter("@iban", iban) };
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetBankAccountByIBAN", sqlParams);
+                DataTable dataTable = await dataLink.ExecuteReader("GetBankAccountByIBAN", sqlParams);
                 if (dataTable != null)
                 {
                     return ConvertDataTableRowToBankAccount(dataTable.Rows[0]);
@@ -172,7 +178,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@max_nr_transactions_daily",  bankAccount.MaximumNrTransactions),
                     new SqlParameter("@blocked",                    bankAccount.Blocked)
                 };
-                await DataLink.Instance.ExecuteNonQuery("AddBankAccount", sqlParams);
+                await dataLink.ExecuteNonQuery("AddBankAccount", sqlParams);
                 return true;
             }
             catch (Exception)
@@ -196,7 +202,7 @@ namespace LoanShark.Repository
                 {
                     new SqlParameter("@iban", iban)
                 };
-                await DataLink.Instance.ExecuteNonQuery("RemoveBankAccount", sqlParams);
+                await dataLink.ExecuteNonQuery("RemoveBankAccount", sqlParams);
                 return true;
             }
             catch (Exception)
@@ -261,7 +267,7 @@ namespace LoanShark.Repository
         /// <returns>A list of currency names as strings</returns>
         public async Task<List<string>> GetCurrencies()
         {
-            DataTable dataTable = await DataLink.Instance.ExecuteReader("GetCurrencies");
+            DataTable dataTable = await dataLink.ExecuteReader("GetCur rencies");
             return await ConvertDataTableToCurrencyList(dataTable);
         }
 
@@ -273,7 +279,7 @@ namespace LoanShark.Repository
         public async Task<List<string>> GetCredentials(string email)
         {
             var sqlParams = new SqlParameter[] { new SqlParameter("@email", email) };
-            DataTable dataTable = await DataLink.Instance.ExecuteReader("GetCredentials", sqlParams);
+            DataTable dataTable = await dataLink.ExecuteReader("GetCredentials", sqlParams);
             List<string> credentials = new List<string>();
             credentials.Add(Convert.ToString(dataTable.Rows[0]["hashed_password"]) ?? string.Empty);
             credentials.Add(Convert.ToString(dataTable.Rows[0]["password_salt"]) ?? string.Empty);
@@ -295,7 +301,7 @@ namespace LoanShark.Repository
                              new SqlParameter("@max_nr_transactions_daily", nba.MaximumNrTransactions),
                              new SqlParameter("@blocked", nba.Blocked)
                 };
-                await DataLink.Instance.ExecuteNonQuery("UpdateBankAccount", sqlParams);
+                await dataLink.ExecuteNonQuery("UpdateBankAccount", sqlParams);
                 return true;
             }
             catch (Exception)

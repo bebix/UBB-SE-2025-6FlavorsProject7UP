@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using LoanShark.Data;
 using LoanShark.Domain;
 using LoanShark.Repository;
 
@@ -21,7 +22,7 @@ namespace LoanShark.Service
         /// Initializes a new instance of the BankAccountService class
         public BankAccountService()
         {
-            bankAccountRepository = new BankAccountRepository();
+            bankAccountRepository = new BankAccountRepository(DataLink.Instance);
         }
 
         public BankAccountService(IBankAccountRepository repository)
