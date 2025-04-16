@@ -199,7 +199,7 @@ namespace LoanShark.Repository
 
                 SqlParameter[] parameters =
                 {
-                    new SqlParameter("@IBAN", iban),
+                    new SqlParameter("@iban", iban),
                     new SqlParameter("@amount", newBalance)
                 };
 

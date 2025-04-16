@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using LoanShark.Data;
 using LoanShark.Domain;
 using LoanShark.Repository;
 
@@ -13,9 +14,9 @@ namespace LoanShark.Service
         // Simulated database for demonstration purposes
         private readonly ILoanRepository loanRepository;
 
-        public LoanService()
+        public LoanService(ILoanRepository repository)
         {
-            loanRepository = new LoanRepository();
+            this.loanRepository = repository;
         }
 
         // Get all loans for a specific user
