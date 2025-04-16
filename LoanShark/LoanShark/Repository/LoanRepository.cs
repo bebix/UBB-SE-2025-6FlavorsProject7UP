@@ -25,8 +25,10 @@ namespace LoanShark.Repository
 
     public class LoanRepository : ILoanRepository
     {
-        public LoanRepository()
+        private readonly IDataLink dataLink;
+        public LoanRepository(IDataLink dataLink)
         {
+            this.dataLink = dataLink;
         }
 
         public async Task<Loan?> CreateLoan(Loan loan)
@@ -50,7 +52,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@id_loan", SqlDbType.Int) { Direction = ParameterDirection.Output }
                 };
 
-                await DataLink.Instance.ExecuteNonQuery("CreateLoan", parameters);
+                await dataLink.ExecuteNonQuery("CreateLoan", parameters);
 
                 // Get the ID of the newly created loan
                 int newLoanId = (int)parameters.First(p => p.ParameterName == "@id_loan").Value;
@@ -72,7 +74,7 @@ namespace LoanShark.Repository
         {
             try
             {
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetAllLoans");
+                DataTable dataTable = await dataLink.ExecuteReader("GetAllLoans");
                 return ConvertDataTableToLoans(dataTable);
             }
             catch (Exception ex)
@@ -91,7 +93,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@id_user", userId)
                 };
 
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetLoansByUserId", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetLoansByUserId", parameters);
                 return ConvertDataTableToLoans(dataTable);
             }
             catch (Exception ex)
@@ -110,7 +112,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@id_loan", loanId)
                 };
 
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetLoanById", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetLoanById", parameters);
 
                 if (dataTable.Rows.Count == 0)
                 {
@@ -141,7 +143,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@loan_state", loan.State)
                 };
 
-                int rowsAffected = await DataLink.Instance.ExecuteNonQuery("UpdateLoan", parameters);
+                int rowsAffected = await dataLink.ExecuteNonQuery("UpdateLoan", parameters);
                 Debug.WriteLine("REPO: Loan updated", loan.ToString());
                 return rowsAffected > 0;
             }
@@ -161,7 +163,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@id_loan", loanId)
                 };
 
-                int rowsAffected = await DataLink.Instance.ExecuteNonQuery("DeleteLoan", parameters);
+                int rowsAffected = await dataLink.ExecuteNonQuery("DeleteLoan", parameters);
                 Debug.WriteLine("REPO: Loan deleted", loanId);
                 return rowsAffected > 0;
             }
@@ -182,7 +184,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@id_user", userId)
                 };
 
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetBankAccountsByUserId", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetBankAccountsByUserId", parameters);
                 return ConvertDataTableToBankAccounts(dataTable);
             }
             catch (Exception ex)
@@ -201,7 +203,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@iban", iban)
                 };
 
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetBankAccountByIBAN", parameters);
+                DataTable dataTable = await dataLink.ExecuteReader("GetBankAccountByIBAN", parameters);
                 return ConvertDataRowToBankAccount(dataTable.Rows[0]);
             }
             catch (Exception ex)
@@ -221,7 +223,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@amount", amount)
                 };
 
-                int rowsAffected = await DataLink.Instance.ExecuteNonQuery("UpdateBankAccountBalance", parameters);
+                int rowsAffected = await dataLink.ExecuteNonQuery("UpdateBankAccountBalance", parameters);
                 Debug.WriteLine("REPO: Bank account updated", iban, amount);
                 return rowsAffected > 0;
             }
@@ -237,7 +239,7 @@ namespace LoanShark.Repository
         {
             try
             {
-                DataTable dataTable = await DataLink.Instance.ExecuteReader("GetAllCurrencyExchanges");
+                DataTable dataTable = await dataLink.ExecuteReader("GetAllCurrencyExchanges");
                 return ConvertDataTableToCurrencyExchanges(dataTable);
             }
             catch (Exception ex)

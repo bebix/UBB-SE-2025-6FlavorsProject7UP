@@ -7,7 +7,15 @@ using Microsoft.Data.SqlClient;
 
 namespace LoanShark.Data
 {
-    public class DataLink
+    public interface IDataLink
+    {
+        void OpenConnection();
+        void CloseConnection();
+        Task<T?> ExecuteScalar<T>(string storedProcedure, SqlParameter?[] sqlParameters = null);
+        Task<DataTable> ExecuteReader(string storedProcedure, SqlParameter?[] sqlParameters = null);
+        Task<int> ExecuteNonQuery(string storedProcedure, SqlParameter?[] sqlParameters = null);
+    }
+    public class DataLink : IDataLink
     {
         // Singleton instance
         private static DataLink? instance;
@@ -32,8 +40,8 @@ namespace LoanShark.Data
 
         private DataLink()
         {
-            // connectionString = AppConfig.GetConnectionString("MyLocalDb");
-            connectionString = @"Data Source=DESKTOP-FEAUT17;Initial Catalog=loan_shark;Integrated Security=True;TrustServerCertificate=True";
+             connectionString = AppConfig.GetConnectionString("MyLocalDb");
+            // connectionString = @"Data Source=DESKTOP-FEAUT17;Initial Catalog=loan_shark;Integrated Security=True;TrustServerCertificate=True";
             try
             {
                 sqlConnection = new SqlConnection(connectionString);

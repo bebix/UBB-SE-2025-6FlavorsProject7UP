@@ -4,7 +4,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows.Input;
+using LoanShark.Data;
 using LoanShark.Domain;
+using LoanShark.Repository;
 using LoanShark.Service;
 using Microsoft.UI.Xaml;
 
@@ -286,7 +288,7 @@ namespace LoanShark.ViewModel
         public LoanViewModel()
         {
             // Initialize the loan service
-            loanService = new LoanService();
+            loanService = new LoanService(new LoanRepository(DataLink.Instance));
 
             // Initialize collections
             Loans = new ObservableCollection<Loan>();

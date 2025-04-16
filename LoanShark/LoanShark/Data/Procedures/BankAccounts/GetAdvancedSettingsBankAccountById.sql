@@ -1,4 +1,6 @@
-﻿CREATE OR ALTER PROCEDURE GetBankAccountByIBAN 
+﻿--nuj de ce are numele asta, in cod trebuie folosita cealalta
+
+CREATE OR ALTER PROCEDURE GetBankAccountByIBAN 
 	@iban VARCHAR(100),
 	@daily_limit FLOAT,
 	@custom_name VARCHAR(100),
