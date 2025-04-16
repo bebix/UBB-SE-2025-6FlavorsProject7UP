@@ -10,9 +10,15 @@ using Microsoft.Data.SqlClient;
 
 namespace LoanShark.Repository
 {
+    public interface ITransactionHistoryRepository
+    {
+        Task<ObservableCollection<Transaction>> GetTransactionsNormal();
+        Task<ObservableCollection<string>> GetTransactionsForMenu();
+        Task<ObservableCollection<string>> GetTransactionsDetailed();
+    }
     // repo class is static but it should be fine as long as the methods are static, you dont need to change anything
     // about the functions
-    public class TransactionHistoryRepository
+    public class TransactionHistoryRepository : ITransactionHistoryRepository
     {
         public TransactionHistoryRepository()
         {

@@ -16,11 +16,17 @@ namespace LoanShark.Service
         // transactions history service class needs an iban to be passed in the constructor
         // this iban is used to filter the transactions by the sender iban or receiver iban
         private string iban;
-        public TransactionHistoryRepository Repo;
+        public ITransactionHistoryRepository Repo;
         public TransactionHistoryService()
         {
-            this.Repo = new TransactionHistoryRepository();
             this.iban = UserSession.Instance.GetUserData("current_bank_account_iban") ?? string.Empty;
+            this.Repo = new TransactionHistoryRepository();
+        }
+
+        public TransactionHistoryService(ITransactionHistoryRepository repo, string iban)
+        {
+            this.Repo = repo;
+            this.iban = iban;
         }
 
         // retrieveForMenu() returns a list of transactions formatted for the menu
