@@ -39,7 +39,7 @@ namespace LoanShark.Tests
             dataTable.Columns.Add("max_per_transaction");
             dataTable.Columns.Add("max_nr_transactions_daily");
 
-            dataTable.Rows.Add(expectedIBAN, "RON", "1234.56", false, 1, "My Acc", "1000", "500", "10");
+            dataTable.Rows.Add(expectedIBAN, "RON", 1234.56, false, 1, "My Acc", "1000", "500", "10");
 
             mockDataLink.Setup(dl => dl.ExecuteReader("GetBankAccountByIBAN", It.IsAny<SqlParameter[]>()))
                         .ReturnsAsync(dataTable);
@@ -179,7 +179,7 @@ namespace LoanShark.Tests
             table.Rows.Add("EUR");
             table.Rows.Add("RON");
 
-            mockDataLink.Setup(m => m.ExecuteReader("GetCur rencies", null))
+            mockDataLink.Setup(m => m.ExecuteReader("GetCurrencies", null))
                 .ReturnsAsync(table);
 
             var result = await repo.GetCurrencies();

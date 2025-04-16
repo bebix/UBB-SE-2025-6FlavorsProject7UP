@@ -8,20 +8,25 @@ namespace LoanShark.Service
 {
     public class LoginService
     {
-        public LoginRepository Repo;
+        private readonly ILoginRepository repo;
 
         public LoginService()
         {
-            this.Repo = new LoginRepository();
+            this.repo = new LoginRepository();
+        }
+
+        public LoginService(ILoginRepository repository)
+        {
+            this.repo = repository;
         }
 
         public async Task<bool> ValidateUserCredentials(string email, string password)
         {
             try
             {
-                DataTable dt = await this.Repo.GetUserCredentials(email);
+                DataTable dt = await this.repo.GetUserCredentials(email);
 
-                // if exception is not thorwn, then the user exists and we continue with the validation
+                // if exception is not thrown, then the user exists and we continue with the validation
                 string hashedPassword = dt.Rows[0]["hashed_password"]?.ToString() ?? string.Empty;
                 string passwordSalt = dt.Rows[0]["password_salt"]?.ToString() ?? string.Empty;
 
@@ -39,8 +44,8 @@ namespace LoanShark.Service
 
         public async Task InstantiateUserSessionAfterLogin(string email)
         {
-            DataTable dt_user_info = await this.Repo.GetUserInfoAfterLogin(email);
-            DataTable dt_bank_accounts = await this.Repo.GetUserBankAccounts(int.Parse(dt_user_info.Rows[0]["id_user"]?.ToString() ?? string.Empty));
+            DataTable dt_user_info = await this.repo.GetUserInfoAfterLogin(email);
+            DataTable dt_bank_accounts = await this.repo.GetUserBankAccounts(int.Parse(dt_user_info.Rows[0]["id_user"]?.ToString() ?? string.Empty));
             string iban = string.Empty;
 
             if (dt_bank_accounts.Rows.Count > 0)
