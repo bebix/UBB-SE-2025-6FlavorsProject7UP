@@ -46,7 +46,8 @@ namespace LoanShark.Service
 
             try
             {
-                await TransactionsService.TakeLoanTransaction(accountIBAN, amount);
+                TransactionsService transactionsService = new TransactionsService();
+                await transactionsService.TakeLoanTransaction(accountIBAN, amount);
             }
             catch (Exception ex)
             {
@@ -116,7 +117,8 @@ namespace LoanShark.Service
 
             try
             {
-                await TransactionsService.PayLoanTransaction(accountIBAN, deductAmount);
+                TransactionsService transactionsService = new TransactionsService();
+                await transactionsService.PayLoanTransaction(accountIBAN, deductAmount);
             }
             catch (Exception ex)
             {

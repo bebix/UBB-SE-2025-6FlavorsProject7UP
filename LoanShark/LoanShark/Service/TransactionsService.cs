@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using LoanShark.Data;
 using LoanShark.Domain;
 using LoanShark.Repository;
 
@@ -9,10 +10,16 @@ namespace LoanShark.Service
 {
     public class TransactionsService
     {
-        private static readonly TransactionsRepository TransactionsRepository = new TransactionsRepository();
+        private ITransactionsRepository transactionsRepository;
 
         public TransactionsService()
         {
+            transactionsRepository = new TransactionsRepository(DataLink.Instance);
+        }
+
+        public TransactionsService(ITransactionsRepository transactionsRepository)
+        {
+            this.transactionsRepository = transactionsRepository;
         }
 
         public async Task<string> AddTransaction(string senderIban, string receiverIban, decimal amount, string transactionDescription = "")
@@ -36,8 +43,8 @@ namespace LoanShark.Service
 
                 Debug.WriteLine($"DEBUG: Processing transaction from {senderIban} to {receiverIban}, Amount: {amount}");
 
-                BankAccount? senderAccount = await TransactionsRepository.GetBankAccountByIBAN(senderIban);
-                BankAccount? receiverAccount = await TransactionsRepository.GetBankAccountByIBAN(receiverIban);
+                BankAccount? senderAccount = await transactionsRepository.GetBankAccountByIBAN(senderIban);
+                BankAccount? receiverAccount = await transactionsRepository.GetBankAccountByIBAN(receiverIban);
 
                 if (senderAccount == null)
                 {
@@ -71,7 +78,7 @@ namespace LoanShark.Service
 
                 if (senderAccount.Currency != receiverAccount.Currency)
                 {
-                    decimal exchangeRate = await TransactionsRepository.GetExchangeRate(senderAccount.Currency, receiverAccount.Currency);
+                    decimal exchangeRate = await transactionsRepository.GetExchangeRate(senderAccount.Currency, receiverAccount.Currency);
                     if (exchangeRate == -1)
                     {
                         return "Exchange rate not available.";
@@ -93,9 +100,9 @@ namespace LoanShark.Service
                     TransactionDescription = transactionDescription
                 };
 
-                await TransactionsRepository.AddTransaction(transaction);
-                await TransactionsRepository.UpdateBankAccountBalance(senderIban, senderAccount.Balance - amount);
-                await TransactionsRepository.UpdateBankAccountBalance(receiverIban, receiverAccount.Balance + receiverAmount);
+                await transactionsRepository.AddTransaction(transaction);
+                await transactionsRepository.UpdateBankAccountBalance(senderIban, senderAccount.Balance - amount);
+                await transactionsRepository.UpdateBankAccountBalance(receiverIban, receiverAccount.Balance + receiverAmount);
 
                 return "Transaction successful!";
             }
@@ -105,7 +112,7 @@ namespace LoanShark.Service
             }
         }
 
-        public static async Task<string> TakeLoanTransaction(string iban, decimal loanAmount)
+        public async Task<string> TakeLoanTransaction(string iban, decimal loanAmount)
         {
             try
             {
@@ -119,7 +126,7 @@ namespace LoanShark.Service
                     return "Invalid loan amount. Must be greater than zero.";
                 }
 
-                BankAccount? userAccount = await TransactionsRepository.GetBankAccountByIBAN(iban);
+                BankAccount? userAccount = await transactionsRepository.GetBankAccountByIBAN(iban);
 
                 if (userAccount == null)
                 {
@@ -130,7 +137,7 @@ namespace LoanShark.Service
                     return "Bank account is blocked.";
                 }
 
-                await TransactionsRepository.UpdateBankAccountBalance(iban, userAccount.Balance + loanAmount);
+                await transactionsRepository.UpdateBankAccountBalance(iban, userAccount.Balance + loanAmount);
 
                 Transaction transaction = new Transaction
                 {
@@ -145,7 +152,7 @@ namespace LoanShark.Service
                     TransactionDescription = "Loan credited to account"
                 };
 
-                await TransactionsRepository.AddTransaction(transaction);
+                await transactionsRepository.AddTransaction(transaction);
 
                 return "Loan credited to your account!";
             }
@@ -155,7 +162,7 @@ namespace LoanShark.Service
             }
         }
 
-        public static async Task<string> PayLoanTransaction(string iban, decimal paymentAmount)
+        public async Task<string> PayLoanTransaction(string iban, decimal paymentAmount)
         {
             try
             {
@@ -171,8 +178,8 @@ namespace LoanShark.Service
                     return "Invalid payment amount. Must be greater than zero.";
                 }
 
-                BankAccount? userAccount = await TransactionsRepository.GetBankAccountByIBAN(iban);
-                BankAccount? bankAccount = await TransactionsRepository.GetBankAccountByIBAN(bankIban);
+                BankAccount? userAccount = await transactionsRepository.GetBankAccountByIBAN(iban);
+                BankAccount? bankAccount = await transactionsRepository.GetBankAccountByIBAN(bankIban);
 
                 if (userAccount == null)
                 {
@@ -191,7 +198,7 @@ namespace LoanShark.Service
                     return "Bank account does not exist.";
                 }
 
-                await TransactionsRepository.UpdateBankAccountBalance(iban, userAccount.Balance - paymentAmount);
+                await transactionsRepository.UpdateBankAccountBalance(iban, userAccount.Balance - paymentAmount);
 
                 Transaction transaction = new Transaction
                 {
@@ -206,7 +213,7 @@ namespace LoanShark.Service
                     TransactionDescription = "Loan payment deducted from account"
                 };
 
-                await TransactionsRepository.AddTransaction(transaction);
+                await transactionsRepository.AddTransaction(transaction);
 
                 return "Loan payment successful!";
             }
@@ -220,7 +227,7 @@ namespace LoanShark.Service
         {
             try
             {
-                return await TransactionsRepository.GetAllCurrencyExchangeRates();
+                return await transactionsRepository.GetAllCurrencyExchangeRates();
             }
             catch (Exception ex)
             {
