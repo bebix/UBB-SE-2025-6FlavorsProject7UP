@@ -166,5 +166,134 @@ namespace LoanShark.Tests.Service
             Assert.Contains("Error retrieving currency exchange rates", ex.Message);
             Assert.Contains("Database connection error", ex.InnerException?.Message);
         }
+
+        [Fact]
+        public async Task AddTransaction_ShouldFail_WhenIBANsAreEmpty()
+        {
+            var result = await _service.AddTransaction("", "", 100m);
+            Assert.Equal("Receiver IBANs must be provided.", result);
+        }
+
+        [Fact]
+        public async Task AddTransaction_ShouldFail_WhenAmountIsNonPositive()
+        {
+            var result = await _service.AddTransaction("IBAN1", "IBAN2", 0m);
+            Assert.Equal("Invalid transaction amount. Must be greater than zero.", result);
+        }
+
+
+        [Fact]
+        public async Task AddTransaction_ShouldFail_WhenSenderEqualsReceiver()
+        {
+            var result = await _service.AddTransaction("IBAN1", "IBAN1", 100m);
+            Assert.Equal("Cannot send money to the same account.", result);
+        }
+
+
+        [Fact]
+        public async Task AddTransaction_ShouldFail_WhenTransactionExceedsMaxLimit()
+        {
+            var sender = new BankAccount("IBAN1", "USD", 2000m, false, 1, "Main", 2000m, 500m, 10);
+            var receiver = new BankAccount("IBAN2", "USD", 300m, false, 2, "Savings", 2000m, 500m, 10);
+
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("IBAN1")).ReturnsAsync(sender);
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("IBAN2")).ReturnsAsync(receiver);
+
+            var result = await _service.AddTransaction("IBAN1", "IBAN2", 600m);
+
+            Assert.Equal("Transaction exceeds maximum limit per transaction (500).", result);
+        }
+
+
+        [Fact]
+        public async Task TakeLoanTransaction_ShouldFail_WhenIbanIsEmpty()
+        {
+            var result = await _service.TakeLoanTransaction("", 200m);
+            Assert.Equal("IBAN must be provided.", result);
+        }
+
+
+        [Fact]
+        public async Task TakeLoanTransaction_ShouldFail_WhenAmountIsInvalid()
+        {
+            var result = await _service.TakeLoanTransaction("IBAN123", 0m);
+            Assert.Equal("Invalid loan amount. Must be greater than zero.", result);
+        }
+
+
+        [Fact]
+        public async Task TakeLoanTransaction_ShouldFail_WhenAccountDoesNotExist()
+        {
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("IBAN123")).ReturnsAsync((BankAccount?)null);
+
+            var result = await _service.TakeLoanTransaction("IBAN123", 100m);
+
+            Assert.Equal("Bank account does not exist.", result);
+        }
+
+
+        [Fact]
+        public async Task TakeLoanTransaction_ShouldFail_WhenAccountIsBlocked()
+        {
+            var account = new BankAccount("IBAN123", "USD", 100m, true, 1, "LoanAcct", 5000m, 1000m, 10);
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("IBAN123")).ReturnsAsync(account);
+
+            var result = await _service.TakeLoanTransaction("IBAN123", 100m);
+
+            Assert.Equal("Bank account is blocked.", result);
+        }
+
+
+        [Fact]
+        public async Task PayLoanTransaction_ShouldFail_WhenIbanIsEmpty()
+        {
+            var result = await _service.PayLoanTransaction("", 100m);
+            Assert.Equal("IBAN must be provided.", result);
+        }
+
+
+        [Fact]
+        public async Task PayLoanTransaction_ShouldFail_WhenAmountIsInvalid()
+        {
+            var result = await _service.PayLoanTransaction("IBAN123", 0m);
+            Assert.Equal("Invalid payment amount. Must be greater than zero.", result);
+        }
+
+
+        [Fact]
+        public async Task PayLoanTransaction_ShouldFail_WhenUserAccountDoesNotExist()
+        {
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("IBAN123")).ReturnsAsync((BankAccount?)null);
+
+            var result = await _service.PayLoanTransaction("IBAN123", 100m);
+
+            Assert.Equal("User account does not exist.", result);
+        }
+
+
+        [Fact]
+        public async Task PayLoanTransaction_ShouldFail_WhenBankAccountIsMissing()
+        {
+            var user = new BankAccount("IBAN123", "USD", 500m, false, 1, "LoanAcct", 2000m, 500m, 10);
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("IBAN123")).ReturnsAsync(user);
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("RO90BANK0000000000000005")).ReturnsAsync((BankAccount?)null);
+
+            var result = await _service.PayLoanTransaction("IBAN123", 100m);
+
+            Assert.Equal("Bank account does not exist.", result);
+        }
+
+
+        [Fact]
+        public async Task PayLoanTransaction_ShouldFail_WhenUserAccountBlocked()
+        {
+            var account = new BankAccount("IBAN123", "USD", 500m, true, 1, "LoanAcct", 2000m, 500m, 10);
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("IBAN123")).ReturnsAsync(account);
+            _mockRepo.Setup(r => r.GetBankAccountByIBAN("RO90BANK0000000000000005")).ReturnsAsync(account);
+
+            var result = await _service.PayLoanTransaction("IBAN123", 100m);
+
+            Assert.Equal("User account is blocked.", result);
+        }
     }
 }
