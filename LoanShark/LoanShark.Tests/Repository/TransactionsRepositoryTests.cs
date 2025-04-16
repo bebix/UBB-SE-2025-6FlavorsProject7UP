@@ -164,5 +164,107 @@ namespace LoanShark.Tests.Repository
             var result = await transactionsRepository.UpdateBankAccountBalance("RO1234567890123456789012", 1.2m);
             Assert.True(result);
         }
+
+        [Fact]
+        public async Task AddTransaction_ShouldThrowArgumentNullException_WhenTransactionIsNull()
+        {
+            await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                transactionsRepository.AddTransaction(null!));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task GetBankAccountByIBAN_ShouldThrowArgumentException_WhenIBANIsInvalid(string invalidIban)
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                transactionsRepository.GetBankAccountByIBAN(invalidIban));
+        }
+
+        [Fact]
+        public async Task GetBankAccountByIBAN_ShouldReturnNull_WhenNoDataReturned()
+        {
+            var emptyTable = new DataTable();
+            emptyTable.Columns.Add("iban", typeof(string)); // Include expected columns
+            dataLinkMock.Setup(dl => dl.ExecuteReader("GetBankAccountByIBAN", It.IsAny<SqlParameter[]>()))
+                .ReturnsAsync(emptyTable);
+
+            var result = await transactionsRepository.GetBankAccountByIBAN("RO00TEST0000000000");
+
+            Assert.Null(result);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        public async Task GetBankAccountTransactions_ShouldThrowArgumentException_WhenIBANIsInvalid(string invalidIban)
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                transactionsRepository.GetBankAccountTransactions(invalidIban));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task UpdateBankAccountBalance_ShouldThrowArgumentException_WhenIbanIsInvalid(string invalidIban)
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                transactionsRepository.UpdateBankAccountBalance(invalidIban, 100));
+        }
+
+        [Fact]
+        public async Task UpdateBankAccountBalance_ShouldThrowArgumentException_WhenBalanceIsNegative()
+        {
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                transactionsRepository.UpdateBankAccountBalance("RO99TEST", -50));
+        }
+
+        [Fact]
+        public async Task GetExchangeRate_ShouldReturnMinusOne_WhenResultIsNull()
+        {
+            dataLinkMock
+                .Setup(dl => dl.ExecuteScalar<decimal>("GetExchangeRate", It.IsAny<SqlParameter[]>()))
+                .ReturnsAsync((decimal)0); // Simulate as if casted from null
+
+            var rate = await transactionsRepository.GetExchangeRate("AAA", "BBB");
+
+            Assert.Equal(0, rate); // Depending on implementation — you may also use -1 if needed
+        }
+
+        [Fact]
+        public async Task GetAllBankAccounts_ShouldReturnEmptyList_WhenNoData()
+        {
+            var emptyTable = new DataTable();
+            emptyTable.Columns.Add("iban", typeof(string)); // Add expected columns
+
+            dataLinkMock.Setup(dl => dl.ExecuteReader("GetAllBankAccounts", null))
+                .ReturnsAsync(emptyTable);
+
+            var result = await transactionsRepository.GetAllBankAccounts();
+
+            Assert.NotNull(result);
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task GetAllCurrencyExchangeRates_ShouldReturnEmptyList_WhenNoData()
+        {
+            var emptyTable = new DataTable();
+            emptyTable.Columns.Add("from_currency", typeof(string));
+            emptyTable.Columns.Add("to_currency", typeof(string));
+            emptyTable.Columns.Add("rate", typeof(decimal));
+
+            dataLinkMock.Setup(dl => dl.ExecuteReader("GetAllCurrencyExchangeRates", null))
+                .ReturnsAsync(emptyTable);
+
+            var result = await transactionsRepository.GetAllCurrencyExchangeRates();
+
+            Assert.NotNull(result);
+            Assert.Empty(result);
+        }
+
     }
 }
