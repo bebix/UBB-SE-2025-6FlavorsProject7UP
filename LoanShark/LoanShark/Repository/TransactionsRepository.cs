@@ -8,8 +8,18 @@ using Microsoft.Data.SqlClient;
 
 namespace LoanShark.Repository
 {
-    public class TransactionsRepository
+    public class TransactionsRepository : ITransactionsRepository
     {
+        private readonly IDataLink dataLink;
+        public TransactionsRepository(IDataLink dataLink)
+        {
+            this.dataLink = dataLink;
+        }
+
+        public TransactionsRepository()
+        {
+        }
+
         public async Task<bool> AddTransaction(Transaction transaction)
         {
             try
@@ -31,7 +41,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@description", string.IsNullOrWhiteSpace(transaction.TransactionDescription) ? DBNull.Value : transaction.TransactionDescription)
                 };
 
-                await DataLink.Instance.ExecuteNonQuery("AddTransaction", parameters);
+                await dataLink.ExecuteNonQuery("AddTransaction", parameters);
                 return true;
             }
             catch (SqlException ex)
@@ -45,7 +55,7 @@ namespace LoanShark.Repository
             try
             {
                 List<BankAccount> bankAccounts = new List<BankAccount>();
-                DataTable result = await DataLink.Instance.ExecuteReader("GetAllBankAccounts");
+                DataTable result = await dataLink.ExecuteReader("GetAllBankAccounts");
 
                 foreach (DataRow row in result.Rows)
                 {
@@ -74,7 +84,7 @@ namespace LoanShark.Repository
             try
             {
                 List<CurrencyExchange> exchangeRates = new List<CurrencyExchange>();
-                DataTable result = await DataLink.Instance.ExecuteReader("GetAllCurrencyExchangeRates");
+                DataTable result = await dataLink.ExecuteReader("GetAllCurrencyExchangeRates");
 
                 foreach (DataRow row in result.Rows)
                 {
@@ -101,7 +111,7 @@ namespace LoanShark.Repository
                     throw new ArgumentException("IBAN cannot be empty.", nameof(iban));
                 }
                 SqlParameter[] parameters = { new SqlParameter("@IBAN", iban) };
-                DataTable result = await DataLink.Instance.ExecuteReader("GetBankAccountByIBAN", parameters);
+                DataTable result = await dataLink.ExecuteReader("GetBankAccountByIBAN", parameters);
 
                 if (result.Rows.Count == 0)
                 {
@@ -137,7 +147,7 @@ namespace LoanShark.Repository
                 }
 
                 SqlParameter[] parameters = { new SqlParameter("@IBAN", iban) };
-                DataTable result = await DataLink.Instance.ExecuteReader("GetBankAccountTransactions", parameters);
+                DataTable result = await dataLink.ExecuteReader("GetBankAccountTransactions", parameters);
 
                 List<Transaction> transactions = new List<Transaction>();
 
@@ -174,7 +184,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@ToCurrency", toCurrency)
                 };
 
-                object result = await DataLink.Instance.ExecuteScalar<decimal>("GetExchangeRate", parameters);
+                object result = await dataLink.ExecuteScalar<decimal>("GetExchangeRate", parameters);
                 return result != null ? Convert.ToDecimal(result) : -1;
             }
             catch (SqlException ex)
@@ -203,7 +213,7 @@ namespace LoanShark.Repository
                     new SqlParameter("@amount", newBalance)
                 };
 
-                await DataLink.Instance.ExecuteNonQuery("UpdateBankAccountBalance", parameters);
+                await dataLink.ExecuteNonQuery("UpdateBankAccountBalance", parameters);
                 return true;
             }
             catch (SqlException ex)
@@ -211,5 +221,20 @@ namespace LoanShark.Repository
                 throw new Exception($"Database error in UpdateBankAccountBalance: {ex.Message}", ex);
             }
         }
+    }
+    public interface ITransactionsRepository
+    {
+        Task<bool> AddTransaction(Transaction transaction);
+
+        Task<List<BankAccount>> GetAllBankAccounts();
+
+        Task<List<CurrencyExchange>> GetAllCurrencyExchangeRates();
+
+        Task<BankAccount?> GetBankAccountByIBAN(string iban);
+
+        Task<List<Transaction>> GetBankAccountTransactions(string iban);
+        Task<decimal> GetExchangeRate(string fromCurrency, string toCurrency);
+
+        Task<bool> UpdateBankAccountBalance(string iban, decimal newBalance);
     }
 }
