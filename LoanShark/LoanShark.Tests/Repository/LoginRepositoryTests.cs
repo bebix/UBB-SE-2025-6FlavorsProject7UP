@@ -179,5 +179,15 @@ namespace LoanShark.Tests.Repository
                 It.Is<SqlParameter[]>(p => p.Length == 1 && (int)p[0].Value == userId)),
                 Times.Once);
         }
+
+        [Fact]
+        public void LoginRepository_ParameterlessConstructor_ShouldCreateInstance()
+        {
+            // Act
+            var repo = new LoginRepository();
+
+            // Assert
+            Assert.NotNull(repo);
+        }
     }
 }

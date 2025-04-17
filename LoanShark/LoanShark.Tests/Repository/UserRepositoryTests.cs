@@ -468,7 +468,24 @@ namespace LoanShark.Tests.Repository
             Assert.Equal(expectedHash, result[0]);
             Assert.Equal(expectedSalt, result[1]);
         }
+        [Fact]
+        public async Task GetUserByCnp_ShouldReturnNull_WhenExceptionIsThrown()
+        {
+            // Arrange
+            var mockDataLink = new Mock<IDataLink>();
+            var repository = new UserRepository(mockDataLink.Object); // Replace with your actual repo name
 
+            string testCnp = "1234567890123";
+            mockDataLink
+                .Setup(dl => dl.ExecuteReader("GetUserByCnp", It.IsAny<SqlParameter[]>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            // Act
+            var result = await repository.GetUserByCnp(testCnp);
+
+            // Assert
+            Assert.Null(result);
+        }
 
 
     }
