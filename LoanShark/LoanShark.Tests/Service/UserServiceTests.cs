@@ -222,6 +222,92 @@ namespace LoanShark.Tests.Service
             Assert.Equal("Succes", result);
             mockUserRepository.Verify(repo => repo.DeleteUser(), Times.Once);
         }
+
+        [Fact]
+        public async Task UpdateUser_ShouldReturnTrue_WhenRepositoryReturnsTrue()
+        {
+            // Arrange
+            var mockRepo = new Mock<IUserRepository>();
+            var service = new UserService(mockRepo.Object); // or wherever your UpdateUser method is defined
+
+            var user = new User(
+                1,
+                new Cnp("1234567890123"),
+                "John",
+                "Doe",
+                new Email("john.doe@example.com"),
+                new PhoneNumber("0712345678"),
+                new HashedPassword("hashedT34!")
+            );
+
+            mockRepo.Setup(r => r.UpdateUser(user)).ReturnsAsync(true);
+
+            // Act
+            var result = await service.UpdateUser(user);
+
+            // Assert
+            Assert.True(result);
+            mockRepo.Verify(r => r.UpdateUser(user), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUserPasswordHashSalt_ShouldReturnExpectedHashAndSalt()
+        {
+            // Arrange
+            var expected = new[] { "hashedPassword123", "saltValue456" };
+
+            var mockRepo = new Mock<IUserRepository>();
+            var service = new UserService(mockRepo.Object); // or the class containing GetUserPasswordHashSalt
+
+            mockRepo.Setup(r => r.GetUserPasswordHashSalt()).ReturnsAsync(expected);
+
+            // Act
+            var result = await service.GetUserPasswordHashSalt();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expected.Length, result.Length);
+            Assert.Equal(expected[0], result[0]);
+            Assert.Equal(expected[1], result[1]);
+            mockRepo.Verify(r => r.GetUserPasswordHashSalt(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateUser_ShouldCallRepositoryWithCorrectUser()
+        {
+            // Arrange
+            var mockRepo = new Mock<IUserRepository>();
+            var service = new UserService(mockRepo.Object); // Replace with your actual service class
+
+            string cnp = "1234567890123";
+            string firstName = "John";
+            string lastName = "Doe";
+            string email = "john.doe@example.com";
+            string phoneNumber = "0712345678";
+            string password = "securePassword123#";
+
+            User? capturedUser = null;
+
+            mockRepo
+                .Setup(r => r.CreateUser(It.IsAny<User>()))
+                .Callback<User>(u => capturedUser = u);
+                
+
+            // Act
+            await service.CreateUser(cnp, firstName, lastName, email, phoneNumber, password);
+
+            // Assert
+            mockRepo.Verify(r => r.CreateUser(It.IsAny<User>()), Times.Once);
+            Assert.NotNull(capturedUser);
+            Assert.Equal(cnp, capturedUser?.Cnp.ToString());
+            Assert.Equal(firstName, capturedUser?.FirstName);
+            Assert.Equal(lastName, capturedUser?.LastName);
+            Assert.Equal(email, capturedUser?.Email.ToString());
+            Assert.Equal(phoneNumber, capturedUser?.PhoneNumber.ToString());
+            Assert.Equal(-1, capturedUser?.UserID);
+        }
+
+
     }
 
     public class UserServiceTestable : UserService

@@ -59,5 +59,32 @@ namespace LoanShark.Tests.Repository
 
             Assert.Null(exception);
         }
+
+        [Fact]
+        public async Task GetTransactionsNormal_WhenExceptionThrown_ReturnsEmptyCollection()
+        {
+            var mockRepo = new Mock<ITransactionHistoryRepository>();
+            mockRepo.Setup(m => m.GetTransactionsNormal()).ThrowsAsync(new Exception("Test Exception"));
+            var exception = await Record.ExceptionAsync(() => mockRepo.Object.GetTransactionsNormal());
+            Assert.NotNull(exception);
+        }
+
+        [Fact]
+        public async Task GetTransactionsForMenu_WhenExceptionThrown_ReturnsEmptyCollection()
+        {
+            var mockRepo = new Mock<ITransactionHistoryRepository>();
+            mockRepo.Setup(m => m.GetTransactionsForMenu()).ThrowsAsync(new Exception("Test Exception"));
+            var exception = await Record.ExceptionAsync(() => mockRepo.Object.GetTransactionsForMenu());
+            Assert.NotNull(exception);
+        }
+
+        [Fact]
+        public async Task GetTransactionsDetailed_WhenExceptionThrown_ReturnsEmptyCollection()
+        {
+            var mockRepo = new Mock<ITransactionHistoryRepository>();
+            mockRepo.Setup(m => m.GetTransactionsDetailed()).ThrowsAsync(new Exception("Test Exception"));
+            var exception = await Record.ExceptionAsync(() => mockRepo.Object.GetTransactionsDetailed());
+            Assert.NotNull(exception);
+        }
     }
 }

@@ -266,5 +266,115 @@ namespace LoanShark.Tests.Repository
             Assert.NotNull(result);
             Assert.Empty(result);
         }
+
+        [Fact]
+        public async Task UpdateBankAccountBalance_ShouldThrowException_WhenSqlExceptionOccurs()
+        {
+            var mockDataLink = new Mock<IDataLink>();
+            var repo = new TransactionsRepository(mockDataLink.Object);
+            string iban = "RO01SEUP0000000001";
+            decimal newBalance = 1000m;
+
+            mockDataLink.Setup(dl => dl.ExecuteNonQuery("UpdateBankAccountBalance", It.IsAny<SqlParameter[]>()))
+                .ThrowsAsync(new Exception("Database error in UpdateBankAccountBalance"));
+
+            await Assert.ThrowsAsync<Exception>(() => repo.UpdateBankAccountBalance(iban, newBalance));
+        }
+
+        [Fact]
+        public async Task GetExchangeRate_ShouldThrowException_WhenSqlExceptionOccurs()
+        {
+            var mockDataLink = new Mock<IDataLink>();
+            var repo = new TransactionsRepository(mockDataLink.Object);
+            string fromCurrency = "RON";
+            string toCurrency = "EUR";
+
+            mockDataLink.Setup(dl => dl.ExecuteScalar<decimal>("GetExchangeRate", It.IsAny<SqlParameter[]>()))
+                .ThrowsAsync(new Exception("Database error in GetExchangeRate"));
+
+            await Assert.ThrowsAsync<Exception>(() => repo.GetExchangeRate(fromCurrency, toCurrency));
+        }
+        [Fact]
+        public async Task GetBankAccountTransactions_ShouldThrowException_WhenSqlExceptionOccurs()
+        {
+            var mockDataLink = new Mock<IDataLink>();
+            var repo = new TransactionsRepository(mockDataLink.Object);
+            string iban = "RO01SEUP0000000001";
+
+            mockDataLink.Setup(dl => dl.ExecuteReader("GetBankAccountTransactions", It.IsAny<SqlParameter[]>()))
+                .ThrowsAsync(new Exception("Database error in GetBankAccountTransactions"));
+
+            await Assert.ThrowsAsync<Exception>(() => repo.GetBankAccountTransactions(iban));
+        }
+
+        [Fact]
+        public async Task GetBankAccountByIBAN_ShouldThrowException_WhenSqlExceptionOccurs()
+        {
+        
+            var mockDataLink = new Mock<IDataLink>();
+            var repo = new TransactionsRepository(mockDataLink.Object);
+            string iban = "RO01SEUP0000000001";
+
+            mockDataLink.Setup(dl => dl.ExecuteReader("GetBankAccountByIBAN", It.IsAny<SqlParameter[]>()))
+                .ThrowsAsync(new Exception("Database error in GetBankAccountByIBAN"));
+
+            await Assert.ThrowsAsync<Exception>(() => repo.GetBankAccountByIBAN(iban));
+        }
+
+        [Fact]
+        public async Task GetAllCurrencyExchangeRates_ShouldThrowException_WhenSqlExceptionOccurs()
+        {
+            var mockDataLink = new Mock<IDataLink>();
+            var repo = new TransactionsRepository(mockDataLink.Object);
+
+            mockDataLink.Setup(dl => dl.ExecuteReader("GetAllCurrencyExchangeRates",null))
+                .ThrowsAsync(new Exception("Database error in GetAllCurrencyExchangeRates: "));
+
+            await Assert.ThrowsAsync<Exception>(() => repo.GetAllCurrencyExchangeRates());
+        }
+        [Fact]
+        public async Task GetAllBankAccounts_ShouldThrowException_WhenSqlExceptionOccurs()
+        {
+            var mockDataLink = new Mock<IDataLink>();
+            var repo = new TransactionsRepository(mockDataLink.Object);
+
+            mockDataLink.Setup(dl => dl.ExecuteReader("GetAllBankAccounts",null))
+                .ThrowsAsync(new Exception("Database error in GetAllBankAccounts: "));
+
+            await Assert.ThrowsAsync<Exception>(() => repo.GetAllBankAccounts());
+        }
+
+        [Fact]
+        public async Task AddTransaction_ShouldThrowException_WhenSqlExceptionOccurs()
+        {
+            var mockDataLink = new Mock<IDataLink>();
+            var repo = new TransactionsRepository(mockDataLink.Object);
+
+            var transaction = new Transaction
+            {
+                SenderIban = "RO01SEUP0000000001",
+                ReceiverIban = "RO01SEUP0000000002",
+                SenderCurrency = "RON",
+                ReceiverCurrency = "EUR",
+                SenderAmount = 100m,
+                ReceiverAmount = 200m,
+                TransactionType = "Transfer",
+                TransactionDescription = "Payment"
+            };
+
+            mockDataLink.Setup(dl => dl.ExecuteNonQuery("AddTransaction", It.IsAny<SqlParameter[]>()))
+                .ThrowsAsync(new Exception("Database error in AddTransaction: "));
+
+            await Assert.ThrowsAsync<Exception>(() => repo.AddTransaction(transaction));
+        }
+        [Fact]
+        public void TransactionsRepository_ParameterlessConstructor_ShouldCreateInstance()
+        {
+            // Act
+            var repo = new TransactionsRepository();
+
+            // Assert
+            Assert.NotNull(repo); // Just confirms the object can be created
+        }
     }
 }

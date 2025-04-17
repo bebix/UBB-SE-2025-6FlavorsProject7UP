@@ -9,6 +9,7 @@ using LoanShark.Service;
 using LoanShark.Domain;
 using Xunit;
 using Windows.System;
+using Moq.Protected;
 namespace LoanShark.Tests.Service
 {
     public class LoanServiceTests
@@ -23,6 +24,8 @@ namespace LoanShark.Tests.Service
             loanService = new LoanService(loanRepositoryMock.Object);
 
         }
+
+
 
         [Fact]
         public async Task GetUserLoans_ReturnsLoansForUser()
@@ -39,6 +42,7 @@ namespace LoanShark.Tests.Service
 
             Assert.Equal(2, result.Count);
         }
+
         [Fact]
         public async Task GetUnpaidUserLoans_ReturnsOnlyUnpaid()
         {
@@ -84,7 +88,7 @@ namespace LoanShark.Tests.Service
         {
             var rates = new List<CurrencyExchange>
             {
-                new CurrencyExchange ( "USD","EUR", 0.9M )
+                new CurrencyExchange("USD", "EUR", 0.9M)
             };
 
             loanRepositoryMock.Setup(r => r.GetAllCurrencyExchanges()).ReturnsAsync(rates);
@@ -100,7 +104,7 @@ namespace LoanShark.Tests.Service
             int userId = 1;
             var accounts = new List<BankAccount>
             {
-                  new BankAccount ("IBAN123", "USD",2000, false, userId,  "accountName",  200,100,10)
+                new BankAccount("IBAN123", "USD", 2000, false, userId, "accountName", 200, 100, 10)
             };
 
             loanRepositoryMock.Setup(r => r.GetBankAccountsByUserId(userId)).ReturnsAsync(accounts);
@@ -110,6 +114,7 @@ namespace LoanShark.Tests.Service
             Assert.Single(result);
             Assert.Equal("IBAN123 - USD - 2000", result.First());
         }
+
         [Fact]
         public async Task GetLoanById_ReturnsCorrectLoan()
         {
@@ -127,6 +132,7 @@ namespace LoanShark.Tests.Service
             Assert.NotNull(result);
             Assert.Equal(20, result.LoanID);
         }
+
         [Fact]
         public async Task CheckSufficientFunds_ReturnsTrue_WhenEnoughBalance()
         {
@@ -187,20 +193,20 @@ namespace LoanShark.Tests.Service
         [InlineData(0, 0)]
         public void CalculateTaxPercentage_ReturnsExpectedValue(int months, decimal expected)
         {
-            
+
             var result = loanService.CalculateTaxPercentage(months);
 
             Assert.Equal(expected, result);
         }
         [Fact]
-         public void GetCurrencyRate_ReturnsMatchingRate_WhenFound()
-         {
+        public void GetCurrencyRate_ReturnsMatchingRate_WhenFound()
+        {
             var rates = new List<CurrencyExchange>
             {
                 new CurrencyExchange("USD", "EUR", 0.9m),
                 new CurrencyExchange("USD", "JPY", 110m)
             };
-                   
+
 
             var result = loanService.GetCurrencyRate(rates, "USD", "EUR");
 
@@ -208,7 +214,7 @@ namespace LoanShark.Tests.Service
             Assert.Equal("USD", result!.FromCurrency);
             Assert.Equal("EUR", result.ToCurrency);
             Assert.Equal(0.9m, result.ExchangeRate);
-          }
+        }
 
         [Fact]
         public void GetCurrencyRate_ReturnsNull_WhenNoMatch()
@@ -269,6 +275,95 @@ namespace LoanShark.Tests.Service
             await Assert.ThrowsAsync<Exception>(() =>
                 loanService.UpdateBankAccount(1, "IBAN123", 100, "USD"));
         }
+
+        [Fact]
+        public async Task TakeLoanAsync_ShouldReturnLoan_WhenParametersAreValid()
+        {
+            // Arrange
+            int userId = 1;
+            decimal amount = 1000m;
+            string currency = "EUR";
+            string iban = "RO49AAAA1B31007593840000";
+            int months = 12;
+            decimal expectedTax = 0.2m;
+
+            var expectedLoan = new Loan(10, userId, amount, currency, DateTime.Now, null, expectedTax, months,
+                "unpaid");
+
+            loanRepositoryMock
+                .Setup(repo => repo.CreateLoan(It.IsAny<Loan>()))
+                .ReturnsAsync(expectedLoan);
+
+            // Act
+            var result = await loanService.TakeLoanAsync(userId, amount, currency, iban, months);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(expectedLoan.LoanID, result!.LoanID);
+            Assert.Equal(userId, result.UserID);
+            Assert.Equal(currency, result.Currency);
+            Assert.Equal("unpaid", result.State);
+        }
+
+        [Theory]
+        [InlineData(0, 12)] // Invalid amount
+        [InlineData(1000, 1)] // Invalid months
+        public async Task TakeLoanAsync_ShouldThrowArgumentException_WhenParametersAreInvalid(decimal amount,
+            int months)
+        {
+            // Arrange
+            int userId = 1;
+            string currency = "EUR";
+            string iban = "RO49AAAA1B31007593840000";
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+                loanService.TakeLoanAsync(userId, amount, currency, iban, months));
+
+            Assert.Equal("Invalid loan parameters", exception.Message);
+        }
+
+        [Fact]
+        public async Task PayLoanAsync_InsufficientFunds_ReturnsError()
+        {
+            var loan = new Loan(123, 1, 1000, "USD", DateTime.Now, null, 0.1m, 12, "unpaid");
+            var account = new BankAccount("IBAN123", "USD", 1000, false, 1, "acc", 0, 0, 0);
+
+            loanRepositoryMock.Setup(r => r.GetAllLoans()).ReturnsAsync(new List<Loan> { loan });
+            loanRepositoryMock.Setup(r => r.GetBankAccountByIBAN("IBAN123")).ReturnsAsync(account);
+            loanRepositoryMock.Setup(r => r.GetBankAccountsByUserId(1)).ReturnsAsync(new List<BankAccount> { account });
+
+            // Force CheckSufficientFunds to return false via low balance
+            account.Balance = 100;
+
+            var result = await loanService.PayLoanAsync(1, 123, "IBAN123");
+
+            Assert.Equal("Insufficient funds", result);
+        }
+
+        [Fact]
+        public async Task PayLoanAsync_UpdateBankAccountFails_ReturnsError()
+        {
+            var loan = new Loan(123, 1, 1000, "USD", DateTime.Now, null, 0.1m, 12, "unpaid");
+            loan.Amount = 1100;
+
+            var account = new BankAccount("IBAN123", "USD", 2000, false, 1, "acc", 0, 0, 0);
+
+            loanRepositoryMock.Setup(r => r.GetAllLoans()).ReturnsAsync(new List<Loan> { loan });
+            loanRepositoryMock.Setup(r => r.GetBankAccountByIBAN("IBAN123")).ReturnsAsync(account);
+            loanRepositoryMock.Setup(r => r.GetBankAccountsByUserId(1)).ReturnsAsync(new List<BankAccount> { account });
+
+            // Simulate exception on update
+            loanRepositoryMock
+                .Setup(r => r.UpdateBankAccountBalance(It.IsAny<string>(), It.IsAny<decimal>()))
+                .ReturnsAsync(true);
+            var result = await loanService.PayLoanAsync(1, 123, "IBAN123");
+
+            Assert.Equal("Update loan failed", result);
+        }
+
+        
+
 
     }
 }

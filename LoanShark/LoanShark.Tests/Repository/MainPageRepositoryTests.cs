@@ -160,5 +160,91 @@ namespace LoanShark.Tests.Repository
                 It.Is<SqlParameter[]>(p => p.Length == 1 && (string)p[0].Value == iban)),
                 Times.Once);
         }
+
+        [Fact]
+        public async Task GetUserBankAccounts_ShouldReturnEmptyDataTable_WhenExceptionOccurs()
+        {
+            // Arrange
+            int userId = 1;
+
+            // Set up the mock to throw an exception when ExecuteReader is called
+            mockDataLink.Setup(dl => dl.ExecuteReader(
+                    "GetUserBankAccounts",
+                    It.Is<SqlParameter[]>(p => p.Length == 1 && (int)p[0].Value == userId)))
+                .ThrowsAsync(new Exception("Database error"));
+
+            // Act
+            var result = await repository.GetUserBankAccounts(userId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Empty(result.Rows); // Since an exception occurs, we should return an empty DataTable
+        }
+
+        [Fact]
+        public async Task GetBankAccountBalanceByUserIban_ShouldReturnZeroAndEmptyString_WhenNoDataFound()
+        {
+            // Arrange
+            string iban = "INVALID_IBAN";
+            var emptyTable = new DataTable();
+            emptyTable.Columns.Add("amount", typeof(decimal));
+            emptyTable.Columns.Add("currency", typeof(string));
+
+            // Set up the mock to return an empty DataTable
+            mockDataLink.Setup(dl => dl.ExecuteReader(
+                    "GetBankAccountBalanceByIban",
+                    It.Is<SqlParameter[]>(p => p.Length == 1 && (string)p[0].Value == iban)))
+                .ReturnsAsync(emptyTable);
+
+            // Act
+            var result = await repository.GetBankAccountBalanceByUserIban(iban);
+
+            // Assert
+            Assert.Equal(0m, result.Item1); // amount should be 0m
+            Assert.Equal(string.Empty, result.Item2); // currency should be empty string
+
+            // Verify the mock was called
+            mockDataLink.Verify(dl => dl.ExecuteReader(
+                    "GetBankAccountBalanceByIban",
+                    It.Is<SqlParameter[]>(p => p.Length == 1 && (string)p[0].Value == iban)),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task GetBankAccountBalanceByUserIban_ShouldReturnZeroAndEmptyString_WhenExceptionOccurs()
+        {
+            // Arrange
+            string iban = "RO01SEUP0000000001";
+
+            // Set up the mock to throw an exception when ExecuteReader is called
+            mockDataLink.Setup(dl => dl.ExecuteReader(
+                    "GetBankAccountBalanceByIban",
+                    It.Is<SqlParameter[]>(p => p.Length == 1 && (string)p[0].Value == iban)))
+                .ThrowsAsync(new Exception("Database error"));
+
+            // Act
+            var result = await repository.GetBankAccountBalanceByUserIban(iban);
+
+            // Assert
+            Assert.Equal(0m, result.Item1); // amount should be 0m
+            Assert.Equal(string.Empty, result.Item2); // currency should be empty string
+
+            // Verify the mock was called
+            mockDataLink.Verify(dl => dl.ExecuteReader(
+                    "GetBankAccountBalanceByIban",
+                    It.Is<SqlParameter[]>(p => p.Length == 1 && (string)p[0].Value == iban)),
+                Times.Once);
+        }
+        [Fact]
+        public void MainPageRepository_ParameterlessConstructor_ShouldCreateInstance()
+        {
+            // Act
+            var repo = new MainPageRepository();
+
+            // Assert
+            Assert.NotNull(repo);
+        }
+
+
     }
 }

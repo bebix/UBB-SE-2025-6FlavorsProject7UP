@@ -293,6 +293,51 @@ namespace LoanShark.Tests
             Assert.True(result);
         }
 
+        [Fact]
+        public async Task GetAllBankAccounts_ShouldReturnNull_WhenExceptionOccurs()
+        {
+            // Arrange
+            mockDataLink.Setup(dl => dl.ExecuteReader("GetAllBankAccounts",null))
+                .ThrowsAsync(new Exception("Database error"));
+
+            // Act
+            var result = await repo.GetAllBankAccounts();
+
+            // Assert
+            Assert.Null(result); // The result should be null when an exception occurs
+        }
+
+        [Fact]
+        public async Task GetBankAccountsByUserId_ShouldReturnNull_WhenExceptionOccurs()
+        {
+            // Arrange
+            int userId = 1;
+            mockDataLink.Setup(dl => dl.ExecuteReader("GetBankAccountsByUser", It.Is<SqlParameter[]>(p => (int)p[0].Value == userId)))
+                .ThrowsAsync(new Exception("Database error"));
+
+            // Act
+            var result = await repo.GetBankAccountsByUserId(userId);
+
+            // Assert
+            Assert.Null(result); // The result should be null when an exception occurs
+        }
+
+
+        [Fact]
+        public async Task GetBankAccountByIBAN_ShouldReturnNull_WhenExceptionOccurs()
+        {
+            // Arrange
+            string iban = "RO01SEUP0000000001";
+            mockDataLink.Setup(dl => dl.ExecuteReader("GetBankAccountByIBAN", It.Is<SqlParameter[]>(p => (string)p[0].Value == iban)))
+                .ThrowsAsync(new Exception("Database error"));
+
+            // Act
+            var result = await repo.GetBankAccountByIBAN(iban);
+
+            // Assert
+            Assert.Null(result); // Result should be null since an exception occurred
+        }
+
     }
 
 }
